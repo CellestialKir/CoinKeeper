@@ -1,0 +1,75 @@
+.main {
+    flex: 1; 
+    background-color: #2d2f33;
+    color: aliceblue;
+    padding: 10px;
+}
+
+.from-input,
+.type-input,
+.bill-input,
+.date-input,
+.comment-input{
+    margin: 10px, 10px;
+}
+body {
+    margin: 0;
+    font-family: sans-serif;
+    background-color: #f5f5f5;
+  }
+  
+  h3 {
+    margin: 0 0 12px 0;
+  }
+  
+  .card {
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+
+  .app {
+    max-width: 500px;
+    margin: 0 auto;
+    background-color: white;
+    min-height: 100vh;
+  }
+  
+  .main-content {
+    padding: 0 20px;
+    flex: 1; 
+    background-color: #2d2f33;
+    color: white;
+    padding: 10px;
+    
+  }
+
+  .operations{
+    margin-left: 50%;
+  }
+  
+  
+  /* Стили для ряда с диаграммами */
+.charts-row {
+  display: flex;
+  gap: 30px; /* Расстояние между диаграммами */
+  justify-content: space-between;
+  width: 50%;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+  .charts-row {
+    flex-direction: column;
+  }
+}
+
+/* Стили для контейнеров с диаграммами */
+.chart-container {
+  flex: 1;
+  min-width: 400px; /* Минимальная ширина */
+  padding: 20px;
+
+}
