@@ -55,9 +55,15 @@
     gap:10px;
 }
 
-.light-theme .operations-page{
+.light-theme .operations-page,
+.light-theme .stats{
     background-color: aliceblue;
     border-radius: 0px 0px 10px 10px;
+    padding: 10px 20px;
+}
+
+.light-theme .stats{
+    color: rgb(40, 35, 35)
 }
 
 .light-theme .main-content{

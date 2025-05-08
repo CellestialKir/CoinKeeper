@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-
 import '../css/Input.css';
 
 const Input = ({ onAddCard, types, banks }) => {
@@ -9,66 +8,57 @@ const Input = ({ onAddCard, types, banks }) => {
   const [date, setDate] = useState('');
   const [comment, setComment] = useState('');
   const [operationType, setOperationType] = useState('');
-  const [selectedInco, setSelectedInco] = useState('');
-
-  const inco = [
-    { id: 1, name: 'Стипендия', color: '#A8E4A0', icon: '💵' },
-    { id: 2, name: 'Перевод', color: '#A8E4A0', icon: '💵' },
-    { id: 3, name: 'Зарплата', color: '#A8E4A0', icon: '💵' }
-  ];
-
-  // const banks = [
-  //   { id: 1, name: 'Кредитная карта', amount:0 },
-  //   { id: 2, name: 'Наличные', amount:0},
-  //   { id: 3, name: 'Банковский перевод', amount:0},
-  //   { id: 4, name: 'Электронный кошелек', amount:0}
-  // ];
 
   const handleSubmit = () => {
-    let category = '';
-
-    if (operationType === 'income') {
-      if (!selectedBank || !amount || !date) {
-        alert('Заполни все поля для дохода!');
-        return;
-      }
-      category = inco.find(i => i.id == selectedInco)?.name || 'Без категории';
+    if (!operationType) {
+      alert('Выберите тип операции (доход/расход)');
+      return;
     }
 
-    if (operationType === 'expense') {
-      if (!selectedBank || !selectedType || !amount || !date) {
-        alert('Заполни все поля для расхода!');
-        return;
-      }
-      category = types.find(t => t.id == selectedType)?.name || 'Без категории';
+    if (!selectedBank || !amount || !date) {
+      alert('Заполните все обязательные поля!');
+      return;
     }
+
+    // Для расходов дополнительно проверяем выбор категории
+    if (operationType === 'expense' && !selectedType) {
+      alert('Для расхода необходимо выбрать категорию');
+      return;
+    }
+
+    const selectedBankObj = banks.find(b => b.id == selectedBank);
+    const bankName = selectedBankObj?.name || '';
 
     const newCard = {
       id: Date.now(),
-      category,
+      category: operationType === 'expense' 
+        ? types.find(t => t.id == selectedType)?.name || 'Без категории'
+        : 'Доход',
       amount: Number(amount),
       date,
       comment,
       operationType,
-      bank: banks.find(b => b.id === Number(selectedBank))?.name || '',
-      type: types.find(t => t.id === Number(selectedType))?.name || '',
-      icon: operationType === 'income'
-        ? inco.find(i => i.id == selectedInco)?.icon || ''
-        : types.find(t => t.id == selectedType)?.icon || '',
-      color: operationType === 'income'
-        ? inco.find(i => i.id == selectedInco)?.color || ''
-        : types.find(t => t.id == selectedType)?.color || ''
+      bank: bankName,
+      type: operationType === 'expense' 
+        ? types.find(t => t.id == selectedType)?.name || ''
+        : '',
+      icon: operationType === 'expense'
+        ? types.find(t => t.id == selectedType)?.icon || ''
+        : '💵', // Иконка по умолчанию для дохода
+      color: operationType === 'expense'
+        ? types.find(t => t.id == selectedType)?.color || ''
+        : '#A8E4A0' // Цвет по умолчанию для дохода
     };
 
     onAddCard(newCard);
 
+    // Сброс формы
     setSelectedBank('');
     setSelectedType('');
     setAmount('');
     setDate('');
     setComment('');
     setOperationType('');
-    setSelectedInco('');
   };
 
   return (
@@ -88,7 +78,7 @@ const Input = ({ onAddCard, types, banks }) => {
         </button>
       </div>
 
-      {operationType === 'income' && (
+      {operationType && (
         <>
           <select
             value={selectedBank}
@@ -103,61 +93,20 @@ const Input = ({ onAddCard, types, banks }) => {
             ))}
           </select>
 
-          <input
-            placeholder="Сумма:"
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="bill-input"
-          />
-
-          <input
-            placeholder="Дата:"
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="date-input"
-          />
-
-          <input
-            placeholder="Комментарий:"
-            type="text"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            className="comment-input"
-          />
-
-          <button className="input-button" onClick={handleSubmit}>+</button>
-        </>
-      )}
-
-      {operationType === 'expense' && (
-        <>
-          <select
-            value={selectedBank}
-            onChange={(e) => setSelectedBank(e.target.value)}
-            className="from-input"
-          >
-            <option value="">Выбери банк</option>
-            {banks.map(bank => (
-              <option key={bank.id} value={bank.id}>
-                {bank.name}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={selectedType}
-            onChange={(e) => setSelectedType(e.target.value)}
-            className="type-input"
-          >
-            <option value="">Выбери тип</option>
-            {types.map(type => (
-              <option key={type.id} value={type.id}>
-                {type.name}
-              </option>
-            ))}
-          </select>
+          {operationType === 'expense' && (
+            <select
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value)}
+              className="type-input"
+            >
+              <option value="">Выбери категорию расхода</option>
+              {types.map(type => (
+                <option key={type.id} value={type.id}>
+                  {type.name}
+                </option>
+              ))}
+            </select>
+          )}
 
           <input
             placeholder="Сумма:"

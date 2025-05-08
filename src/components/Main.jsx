@@ -6,6 +6,7 @@ import Input from './Input';
 import { createHistory, fetchHistory } from '../store/actions/historyActions';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchTypes, updateType } from '../store/actions/typeActions';
+import { fetchAccounts, updateAccount } from '../store/actions/accountActions';
 
 import {
   PieChart,
@@ -25,34 +26,18 @@ const Main = ({ activeBoard }) => {
   const dispatch = useDispatch();
   const { data: historyData = [], loading, error } = useSelector((state) => state.history);
   const { data: types = [] } = useSelector((state) => state.types);
+  const { items: accounts = [] } = useSelector((state) => state.account || {});
   const [activeTab, setActiveTab] = useState('operations');
   const [cards, setCards] = useState([]);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  // const [types, setTypes] = useState([
-  //   { id: 1, name: 'Развлечения', color: '#ff6b6b', icon: '🎮', amount: 0 },
-  //   { id: 2, name: 'Транспорт', color: '#4ecdc4', icon: '🚗', amount: 0 },
-  //   { id: 3, name: 'Продукты', color: '#ffe66d', icon: '🛒', amount: 0 }
-  // ]);
 
-  const [banks, setBanks] = useState([
-    { id: 1, name: 'Кредитная карта', amount: 0, color: '#ff6b6b' },
-    { id: 2, name: 'Наличные', amount: 0, color: '#4ecdc4' },
-    { id: 3, name: 'Банковский перевод', amount: 0, color: '#ff6b6b' },
-    { id: 4, name: 'Электронный кошелек', amount: 0, color: '#4ecdc4' }
-  ]);
-
-  // Загрузка данных при монтировании
   useEffect(() => {
     dispatch(fetchHistory());
     dispatch(fetchTypes());
+    dispatch(fetchAccounts());
   }, [dispatch]);
 
-  useEffect(() => {
-      console.log('Types Data:', types); // Логирование данных типов
-  }, [types]);
-
-  // Синхронизация локального состояния с Redux store
   useEffect(() => {
     if (historyData && Array.isArray(historyData)) {
       setCards(historyData);
@@ -63,46 +48,35 @@ const Main = ({ activeBoard }) => {
     if (!newCard || typeof newCard !== 'object') return;
 
     try {
-        // Обновляем локальное состояние
-        setCards(prev => [...prev, newCard]);
+      setCards(prev => [...prev, newCard]);
 
-        // Обновляем types если это расход
-        if (newCard.operationType === 'expense') {
-          console.log(newCard)
-          const selectedType = types.find(t => t.name === newCard.type);
-          if (selectedType) {
-              console.log('Selected Type for Update:', selectedType); // Логирование выбранного типа
-              dispatch(updateType(selectedType.id, {
-                  name: selectedType.name,
-                  color: selectedType.color,
-                  icon: selectedType.icon,
-                  amount: selectedType.amount + newCard.amount
-              }));
-          }
+      if (newCard.operationType === 'expense') {
+        const selectedType = types.find(t => t.name === newCard.category);
+        if (selectedType) {
+          dispatch(updateType(selectedType.id, {
+            name: selectedType.name,
+            color: selectedType.color,
+            icon: selectedType.icon,
+            amount: selectedType.amount + newCard.amount
+          }));
+        }
       }
 
-        // Обновляем banks
-        setBanks(prevBanks => 
-            prevBanks.map(bank => 
-                bank.name === newCard.bank 
-                    ? { 
-                        ...bank, 
-                        amount: bank.amount + (newCard.operationType === 'income' 
-                            ? newCard.amount 
-                            : -newCard.amount) 
-                    } 
-                    : bank
-            )
-        );
-        
-        // Отправляем действие в Redux
-        dispatch(createHistory(newCard));
+      const selectedBank = accounts.find(bank => bank.name === newCard.bank);
+      if (selectedBank) {
+        dispatch(updateAccount(selectedBank.id, {
+          ...selectedBank,
+          amount: selectedBank.amount + (newCard.operationType === 'income'
+            ? newCard.amount
+            : -newCard.amount)
+        }));
+      }
 
+      dispatch(createHistory(newCard));
     } catch (error) {
-        console.error('Error adding card:', error);
+      console.error('Error adding card:', error);
     }
-};
-
+  };
 
   const tabs = [
     { id: 'operations', label: 'Операции' },
@@ -113,10 +87,9 @@ const Main = ({ activeBoard }) => {
     return cards.filter(card => {
       try {
         if (!card?.date) return false;
-        
         const cardDate = new Date(card.date);
         if (isNaN(cardDate.getTime())) return false;
-        
+
         const start = startDate ? new Date(startDate) : null;
         const end = endDate ? new Date(endDate) : null;
 
@@ -174,7 +147,7 @@ const Main = ({ activeBoard }) => {
     const grouped = filtered.reduce((acc, card) => {
       const month = new Date(card.date).toLocaleString('ru-RU', { month: 'short' });
       if (!month) return acc;
-      
+
       if (!acc[month]) acc[month] = { income: 0, expense: 0 };
       card.operationType === 'income'
         ? acc[month].income += card.amount
@@ -191,17 +164,31 @@ const Main = ({ activeBoard }) => {
   const statsData = getStatsData();
   const monthlyData = getMonthlyData(cards);
 
+  // ❗ Только расходы
+  const expenseStatsData = statsData.filter(item => item.type === 'expense');
+
+  // 🎨 Генерация рандомных цветов
+  const generateColorMap = (data) => {
+    const map = {};
+    data.forEach(item => {
+      map[item.name] = `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`;
+    });
+    return map;
+  };
+
+  const expenseColorMap = generateColorMap(expenseStatsData);
+
   if (loading) return <div className="loading">Загрузка данных...</div>;
   if (error) return <div className="error">Ошибка загрузки: {error}</div>;
 
   return (
     <main className="main-content">
       <Tabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
-      
+
       {activeTab === 'operations' && (
         <>
-          <Input onAddCard={handleAddCard} types={types} banks={banks} />
-          <OperationsPage cards={cards} types={types} banks={banks} />
+          <Input onAddCard={handleAddCard} types={types} banks={accounts} />
+          <OperationsPage cards={cards} types={types} banks={accounts} />
         </>
       )}
 
@@ -225,25 +212,24 @@ const Main = ({ activeBoard }) => {
             />
           </div>
 
-          {statsData.length > 0 ? (
+          {expenseStatsData.length > 0 ? (
             <>
               <div className="chart-container">
-                <h3>Распределение по категориям</h3>
+                <h3>Распределение расходов по категориям</h3>
                 <PieChart width={500} height={400}>
                   <Pie
-                    data={statsData}
+                    data={expenseStatsData}
                     dataKey="value"
                     nameKey="name"
                     cx="50%"
                     cy="50%"
                     outerRadius={120}
-                    fill="#8884d8"
                     label
                   >
-                    {statsData.map((entry, index) => (
+                    {expenseStatsData.map((entry, index) => (
                       <Cell
                         key={`cell-${index}`}
-                        fill={entry.type === 'income' ? '#82ca9d' : '#ff7f0e'}
+                        fill={expenseColorMap[entry.name]}
                       />
                     ))}
                   </Pie>
